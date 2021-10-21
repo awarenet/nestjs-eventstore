@@ -9,6 +9,7 @@ import {
   EventStoreModuleAsyncOptions,
 } from '../event-store.module';
 import { EventPublisher } from './event-publisher';
+import { ESAggregateRoot } from '../shared/eventstore-aggregate-root';
 
 @Global()
 @Module({})
@@ -18,7 +19,7 @@ export class EventStoreCqrsModule {
     private readonly eventsBus: EventBus,
     private readonly commandsBus: CommandBus,
     private readonly queryBus: QueryBus,
-  ) { }
+  ) {}
 
   onModuleInit() {
     const { events, queries, sagas, commands } = this.explorerService.explore();
@@ -65,7 +66,7 @@ export class EventStoreCqrsModule {
         CommandBus,
         QueryBus,
         ExplorerService,
-        EventPublisher,
+        EventPublisher
       ],
     };
   }

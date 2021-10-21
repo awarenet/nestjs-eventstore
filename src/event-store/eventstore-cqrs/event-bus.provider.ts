@@ -79,7 +79,7 @@ export class EventBusProvider extends ObservableBus<IEvent>
   }
 
   onModuleDestroy() {
-    this.subscriptions.forEach(subscription => subscription.unsubscribe());
+    this.subscriptions.forEach((subscription) => subscription.unsubscribe());
   }
 
   publish<T extends IEvent>(event: T, stream: string) {
@@ -87,12 +87,12 @@ export class EventBusProvider extends ObservableBus<IEvent>
   }
 
   publishAll(events: IEvent[]) {
-    (events || []).forEach(event => this._publisher.publish(event));
+    (events || []).forEach((event) => this._publisher.publish(event));
   }
 
   bind(handler: IEventHandler<IEvent>, name: string) {
     const stream$ = name ? this.ofEventName(name) : this.subject$;
-    const subscription = stream$.subscribe(event => handler.handle(event));
+    const subscription = stream$.subscribe((event) => handler.handle(event));
     this.subscriptions.push(subscription);
   }
 
@@ -108,11 +108,11 @@ export class EventBusProvider extends ObservableBus<IEvent>
       })
       .reduce((a, b) => a.concat(b), []);
 
-    sagas.forEach(saga => this.registerSaga(saga));
+    sagas.forEach((saga) => this.registerSaga(saga));
   }
 
   register(handlers: EventHandlerType[] = []) {
-    handlers.forEach(handler => this.registerHandler(handler));
+    handlers.forEach((handler) => this.registerHandler(handler));
   }
 
   protected registerHandler(handler: EventHandlerType) {
@@ -121,14 +121,14 @@ export class EventBusProvider extends ObservableBus<IEvent>
       return;
     }
     const eventsNames = this.reflectEventsNames(handler);
-    eventsNames.map(event =>
+    eventsNames.map((event) =>
       this.bind(instance as IEventHandler<IEvent>, event.name),
     );
   }
 
   protected ofEventName(name: string) {
     return this.subject$.pipe(
-      filter(event => this.getEventName(event) === name),
+      filter((event) => this.getEventName(event) === name),
     );
   }
 
@@ -147,8 +147,8 @@ export class EventBusProvider extends ObservableBus<IEvent>
     }
 
     const subscription = stream$
-      .pipe(filter(e => !!e))
-      .subscribe(command => this.commandBus.execute(command));
+      .pipe(filter((e) => !!e))
+      .subscribe((command) => this.commandBus.execute(command));
 
     this.subscriptions.push(subscription);
   }

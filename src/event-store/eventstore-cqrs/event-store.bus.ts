@@ -60,7 +60,7 @@ export class EventStoreBus {
     );
 
     this.subscribeToPersistentSubscriptions(
-      persistentSubscriptions as ESPersistentSubscription[]
+      persistentSubscriptions as ESPersistentSubscription[],
     );
   }
 
@@ -68,7 +68,7 @@ export class EventStoreBus {
     subscriptions: ESPersistentSubscription[],
   ) {
     this.persistentSubscriptionsCount = subscriptions.length;
-    
+
     await this.createMissingPersistentSubscriptions(subscriptions);
 
     this.persistentSubscriptions = await Promise.all(
@@ -89,24 +89,33 @@ export class EventStoreBus {
     try {
       await Promise.all(
         subscriptions.map(async (subscription) => {
-          let settings = subscription.settings ? subscription.settings :defaultSettings;
-          
-          return this.eventStore.getConnection().createPersistentSubscription(
-            subscription.stream,
-            subscription.persistentSubscriptionName,
-            settings,
-          )
-          .then(() => this.logger.log(
-            `Created persistent subscription -
+          const settings = subscription.settings
+            ? subscription.settings
+            : defaultSettings;
+
+          return this.eventStore
+            .getConnection()
+            .createPersistentSubscription(
+              subscription.stream,
+              subscription.persistentSubscriptionName,
+              settings,
+            )
+            .then(() =>
+              this.logger.log(
+                `Created persistent subscription -
             ${subscription.persistentSubscriptionName}:${subscription.stream}`,
-          ))
-          .catch(() => {this.logger.verbose(`No need to create ${subscription.persistentSubscriptionName} as it already exists.`)});
+              ),
+            )
+            .catch(() => {
+              this.logger.verbose(
+                `No need to create ${subscription.persistentSubscriptionName} as it already exists.`,
+              );
+            });
         }),
       );
     } catch (error) {
       this.logger.error(error);
     }
-
   }
 
   subscribeToCatchUpSubscriptions(subscriptions: ESCatchUpSubscription[]) {
@@ -153,7 +162,9 @@ export class EventStoreBus {
     );
 
     try {
-      await this.eventStore.getConnection().appendToStream(stream, -2, [payload]);
+      await this.eventStore
+        .getConnection()
+        .appendToStream(stream, -2, [payload]);
     } catch (err) {
       this.logger.error(err.message, err.stack);
     }
@@ -161,14 +172,18 @@ export class EventStoreBus {
 
   async publishAll(events: IEvent[], stream?: string) {
     try {
-      await this.eventStore.getConnection().appendToStream(stream, -2, (events || []).map(
-        (event: IEvent) => createEventData(
-          v4(),
-          event.constructor.name,
-          true,
-          Buffer.from(JSON.stringify(event)),
+      await this.eventStore.getConnection().appendToStream(
+        stream,
+        -2,
+        (events || []).map((event: IEvent) =>
+          createEventData(
+            v4(),
+            event.constructor.name,
+            true,
+            Buffer.from(JSON.stringify(event)),
+          ),
         ),
-      ));
+      );
     } catch (err) {
       this.logger.error(err);
     }
@@ -182,7 +197,7 @@ export class EventStoreBus {
         0,
         true,
         (sub, payload) => this.onEvent(sub, payload),
-        subscription =>
+        (subscription) =>
           this.onLiveProcessingStarted(
             subscription as ExtendedCatchUpSubscription,
           ),
@@ -199,18 +214,29 @@ export class EventStoreBus {
     subscriptionName: string,
   ): Promise<ExtendedPersistentSubscription> {
     try {
-      const resolved = (await this.eventStore.getConnection().connectToPersistentSubscription(
-        stream,
-        subscriptionName,
-        (sub, payload) => this.onEvent(sub, payload),
-        (sub, reason, error) =>
-          this.onDropped(sub as ExtendedPersistentSubscription, reason, error),
-      )) as ExtendedPersistentSubscription;
-      this.logger.log(`Connection to persistent subscription ${subscriptionName} on stream ${stream} established!`);
+      const resolved = (await this.eventStore
+        .getConnection()
+        .connectToPersistentSubscription(
+          stream,
+          subscriptionName,
+          (sub, payload) => this.onEvent(sub, payload),
+          (sub, reason, error) =>
+            this.onDropped(
+              sub as ExtendedPersistentSubscription,
+              reason,
+              error,
+            ),
+        )) as ExtendedPersistentSubscription;
+      this.logger.log(
+        `Connection to persistent subscription ${subscriptionName} on stream ${stream} established!`,
+      );
       resolved.isLive = true;
       return resolved;
     } catch (err) {
-      this.logger.error(`[${stream}][${subscriptionName}] ${err.message}`, err.stack);
+      this.logger.error(
+        `[${stream}][${subscriptionName}] ${err.message}`,
+        err.stack,
+      );
       this.reSubscribeToPersistentSubscription(stream, subscriptionName);
     }
   }
@@ -222,7 +248,11 @@ export class EventStoreBus {
     payload: ResolvedEvent,
   ) {
     const { event } = payload;
-    if ((payload.link !== null && !payload.isResolved) || !event || !event.isJson) {
+    if (
+      (payload.link !== null && !payload.isResolved) ||
+      !event ||
+      !event.isJson
+    ) {
       this.logger.error('Received event that could not be resolved!');
       return;
     }
@@ -254,11 +284,12 @@ export class EventStoreBus {
     stream: string,
     subscriptionName: string,
   ) {
-    this.logger.warn(`connecting to subscription ${subscriptionName} ${stream}. Retrying...`);
+    this.logger.warn(
+      `connecting to subscription ${subscriptionName} ${stream}. Retrying...`,
+    );
     setTimeout(
-      (stream, subscriptionName) => this.subscribeToPersistentSubscription(
-        stream, subscriptionName,
-      ),
+      (stream, subscriptionName) =>
+        this.subscribeToPersistentSubscription(stream, subscriptionName),
       3000,
       stream,
       subscriptionName,
