@@ -4,12 +4,12 @@ import { EventBusProvider } from './event-bus.provider';
 import { IAggregateEvent } from '../shared/aggregate-event.interface';
 
 export interface Constructor<T> {
-  new(...args: any[]): T;
+  new (...args: any[]): T;
 }
 
 @Injectable()
 export class EventPublisher {
-  constructor(private readonly eventBus: EventBusProvider) { }
+  constructor(private readonly eventBus: EventBusProvider) {}
 
   mergeClassContext<T extends Constructor<AggregateRoot>>(metatype: T): T {
     const eventBus = this.eventBus;

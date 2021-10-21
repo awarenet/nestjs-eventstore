@@ -31,7 +31,9 @@ export class EventStore {
       this.isConnected = true;
     });
     this.connection.on('closed', () => {
-      this.logger.error(`Connection to EventStore closed! reconnecting attempt(${this.retryAttempts})...`);
+      this.logger.error(
+        `Connection to EventStore closed! reconnecting attempt(${this.retryAttempts})...`,
+      );
       this.retryAttempts += 1;
       this.isConnected = false;
       this.connect();
